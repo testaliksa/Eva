@@ -10,7 +10,7 @@ app.use(cors())
 app.use(express.json())
 
 const anthropic = new Anthropic({
-  apiKey: process.env.VITE_ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
 // Системный промпт Евы

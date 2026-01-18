@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Sun, Moon, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sun, Moon, Check, Loader2 } from 'lucide-react'
+import { supabase, type MoodEntry } from '../lib/supabase'
 
 const moods = [
   { emoji: '😌', label: 'Спокойно', color: 'bg-mint' },
@@ -31,6 +32,8 @@ export function Calendar() {
   const [sleep, setSleep] = useState<number | null>(null)
   const [note, setNote] = useState('')
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [loadingData, setLoadingData] = useState(true)
 
   const today = new Date()
   const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
@@ -60,22 +63,103 @@ export function Calendar() {
 
   const questions = timeOfDay === 'morning' ? morningQuestions : eveningQuestions
 
-  const handleSave = () => {
-    if (selectedMood) {
-      // TODO: Сохранить в Supabase
-      const entry = {
-        date: today.toISOString().split('T')[0],
-        timeOfDay,
+  // Загрузка существующей записи при открытии
+  useEffect(() => {
+    loadExistingEntry()
+  }, [timeOfDay])
+
+  const loadExistingEntry = async () => {
+    setLoadingData(true)
+    try {
+      const todayStr = today.toISOString().split('T')[0]
+      const { data, error } = await supabase
+        .from('mood_entries')
+        .select('*')
+        .eq('date', todayStr)
+        .eq('time_of_day', timeOfDay)
+        .single()
+
+      if (data && !error) {
+        setSelectedMood(data.mood)
+        setEnergy(data.energy)
+        setAnxiety(data.anxiety)
+        setSleep(data.sleep)
+        setNote(data.note || '')
+      } else {
+        // Сбросить форму если записи нет
+        setSelectedMood(null)
+        setEnergy(null)
+        setAnxiety(null)
+        setSleep(null)
+        setNote('')
+      }
+    } catch (err) {
+      console.error('Error loading entry:', err)
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!selectedMood) return
+
+    setLoading(true)
+    try {
+      const todayStr = today.toISOString().split('T')[0]
+
+      // Проверяем, есть ли уже запись на сегодня
+      const { data: existing } = await supabase
+        .from('mood_entries')
+        .select('id')
+        .eq('date', todayStr)
+        .eq('time_of_day', timeOfDay)
+        .single()
+
+      const entry: MoodEntry = {
+        date: todayStr,
+        time_of_day: timeOfDay,
         mood: selectedMood,
         energy,
         anxiety: timeOfDay === 'evening' ? anxiety : null,
         sleep: timeOfDay === 'morning' ? sleep : null,
-        note,
+        note: note || null,
       }
-      console.log('Saving entry:', entry)
+
+      if (existing) {
+        // Обновляем существующую запись
+        const { error } = await supabase
+          .from('mood_entries')
+          .update(entry)
+          .eq('id', existing.id)
+
+        if (error) throw error
+      } else {
+        // Создаём новую запись
+        const { error } = await supabase
+          .from('mood_entries')
+          .insert([entry])
+
+        if (error) throw error
+      }
+
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      console.error('Error saving entry:', err)
+      alert('Не удалось сохранить. Попробуй ещё раз.')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  // Показываем loading пока данные грузятся
+  if (loadingData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+        <Loader2 size={32} className="animate-spin text-lavender" />
+        <p className="text-caption">Загружаю...</p>
+      </div>
+    )
   }
 
   return (
@@ -236,16 +320,21 @@ export function Calendar() {
       {/* Кнопка сохранения */}
       <button
         onClick={handleSave}
-        disabled={!selectedMood}
+        disabled={!selectedMood || loading}
         className={`w-full py-4 rounded-2xl font-medium transition-all flex items-center justify-center gap-2 ${
           saved
             ? 'bg-mint text-text'
-            : selectedMood
+            : selectedMood && !loading
             ? 'bg-lavender text-text hover:bg-lavender/80'
             : 'bg-gray-200 text-caption cursor-not-allowed'
         }`}
       >
-        {saved ? (
+        {loading ? (
+          <>
+            <Loader2 size={20} className="animate-spin" />
+            Сохраняю...
+          </>
+        ) : saved ? (
           <>
             <Check size={20} />
             Сохранено

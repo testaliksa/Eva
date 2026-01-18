@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Moon, ChevronRight, Check, Sparkles } from 'lucide-react'
+import { ArrowLeft, Moon, ChevronRight, Check, Sparkles, Loader2 } from 'lucide-react'
+import { supabase, type JournalEntry as JournalEntryType } from '../lib/supabase'
 
 interface JournalEntry {
   question1: string // Чего ты хочешь от завтра?
@@ -49,15 +50,57 @@ export function EveningJournal() {
     question4: '',
   })
   const [isComplete, setIsComplete] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const currentQuestion = questions[currentStep]
+
+  const saveToSupabase = async () => {
+    setSaving(true)
+    try {
+      const today = new Date().toISOString().split('T')[0]
+
+      // Проверяем, есть ли запись на сегодня
+      const { data: existing } = await supabase
+        .from('journal_entries')
+        .select('id')
+        .eq('date', today)
+        .single()
+
+      const entry: JournalEntryType = {
+        date: today,
+        question1: entries.question1,
+        question2: entries.question2,
+        question3: entries.question3,
+        question4: entries.question4,
+      }
+
+      if (existing) {
+        const { error } = await supabase
+          .from('journal_entries')
+          .update(entry)
+          .eq('id', existing.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('journal_entries')
+          .insert([entry])
+        if (error) throw error
+      }
+
+      setIsComplete(true)
+    } catch (err) {
+      console.error('Error saving journal:', err)
+      alert('Не удалось сохранить. Попробуй ещё раз.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleNext = () => {
     if (currentStep < questions.length - 1) {
       setCurrentStep(currentStep + 1)
     } else {
-      setIsComplete(true)
-      // TODO: сохранить в Supabase
+      saveToSupabase()
     }
   }
 
@@ -187,14 +230,19 @@ export function EveningJournal() {
       <div className="p-4 pb-8">
         <button
           onClick={handleNext}
-          disabled={!currentValue.trim()}
+          disabled={!currentValue.trim() || saving}
           className={`w-full flex items-center justify-center gap-2 py-4 rounded-full font-medium transition-all ${
-            currentValue.trim()
+            currentValue.trim() && !saving
               ? 'bg-lavender text-text hover:bg-lavender/80'
               : 'bg-gray-200 text-caption cursor-not-allowed'
           }`}
         >
-          {currentStep < questions.length - 1 ? (
+          {saving ? (
+            <>
+              <Loader2 size={20} className="animate-spin" />
+              Сохраняю...
+            </>
+          ) : currentStep < questions.length - 1 ? (
             <>
               Дальше
               <ChevronRight size={20} />

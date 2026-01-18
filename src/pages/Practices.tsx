@@ -1,125 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Zap } from 'lucide-react'
-
-interface Practice {
-  id: string
-  title: string
-  description: string
-  duration: string
-  category: 'quick' | 'breathing' | 'grounding' | 'body'
-  emoji: string
-  bgColor: string
-}
-
-const practices: Practice[] = [
-  // Быстрые техники — когда накрыло
-  {
-    id: 'breathing-478',
-    title: 'Дыхание 4-7-8',
-    description: 'Успокаивает за 1 минуту',
-    duration: '1 мин',
-    category: 'quick',
-    emoji: '🌬️',
-    bgColor: 'bg-lavender/50',
-  },
-  {
-    id: 'breathing-box',
-    title: 'Квадратное дыхание',
-    description: 'Техника спецназа для стресса',
-    duration: '2 мин',
-    category: 'quick',
-    emoji: '⬜',
-    bgColor: 'bg-mint/50',
-  },
-  {
-    id: 'grounding-54321',
-    title: '5-4-3-2-1',
-    description: 'Вернись в момент "здесь и сейчас"',
-    duration: '3 мин',
-    category: 'quick',
-    emoji: '🌿',
-    bgColor: 'bg-mint/50',
-  },
-  {
-    id: 'power-pose',
-    title: 'Поза супермена',
-    description: 'Прибавь уверенности за 2 минуты',
-    duration: '2 мин',
-    category: 'quick',
-    emoji: '💪',
-    bgColor: 'bg-peach/50',
-  },
-  {
-    id: 'shake-it-off',
-    title: 'Встряхнись',
-    description: 'Сбрось напряжение через тело',
-    duration: '1 мин',
-    category: 'quick',
-    emoji: '🫨',
-    bgColor: 'bg-lavender/50',
-  },
-  // Дыхательные
-  {
-    id: 'breathing-478',
-    title: 'Дыхание 4-7-8',
-    description: 'Классика для успокоения',
-    duration: '1-2 мин',
-    category: 'breathing',
-    emoji: '🌬️',
-    bgColor: 'bg-lavender/50',
-  },
-  {
-    id: 'breathing-box',
-    title: 'Box Breathing',
-    description: 'Равномерное дыхание',
-    duration: '2-3 мин',
-    category: 'breathing',
-    emoji: '⬜',
-    bgColor: 'bg-mint/50',
-  },
-  // Заземление
-  {
-    id: 'grounding-54321',
-    title: 'Заземление 5-4-3-2-1',
-    description: 'Через органы чувств',
-    duration: '3-5 мин',
-    category: 'grounding',
-    emoji: '🌿',
-    bgColor: 'bg-mint/50',
-  },
-  // Телесные
-  {
-    id: 'power-pose',
-    title: 'Поза силы',
-    description: 'Повышает уверенность',
-    duration: '2 мин',
-    category: 'body',
-    emoji: '💪',
-    bgColor: 'bg-peach/50',
-  },
-  {
-    id: 'shake-it-off',
-    title: 'Встряска',
-    description: 'Сбросить напряжение',
-    duration: '1 мин',
-    category: 'body',
-    emoji: '🫨',
-    bgColor: 'bg-lavender/50',
-  },
-]
-
-const categories = [
-  { id: 'quick', label: 'Быстро помочь', icon: '⚡' },
-  { id: 'breathing', label: 'Дыхание', icon: '🌬️' },
-  { id: 'grounding', label: 'Заземление', icon: '🌿' },
-  { id: 'body', label: 'Тело', icon: '💪' },
-]
+import { categories, getPracticesByCategory } from '../lib/practices-data'
 
 export function Practices() {
   const [activeCategory, setActiveCategory] = useState<string>('quick')
 
-  const filteredPractices = practices.filter((p) => p.category === activeCategory)
+  const filteredPractices = getPracticesByCategory(activeCategory)
 
   return (
     <div className="flex flex-col gap-6">
@@ -162,12 +49,11 @@ export function Practices() {
 
       {/* Карточки практик */}
       <div className="grid gap-3">
-        {filteredPractices.map((practice, index) => (
+        {filteredPractices.map((practice) => (
           <Link
-            key={`${practice.id}-${index}`}
+            key={practice.id}
             to={`/practice/${practice.id}`}
-            className={`p-4 rounded-2xl ${practice.bgColor} hover:shadow-md transition-all animate-spring-in`}
-            style={{ animationDelay: `${index * 0.05}s` }}
+            className={`p-4 rounded-2xl ${practice.bgColor}/50 hover:shadow-md transition-all`}
           >
             <div className="flex items-center gap-4">
               <span className="text-3xl">{practice.emoji}</span>

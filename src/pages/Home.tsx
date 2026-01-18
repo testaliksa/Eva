@@ -1,21 +1,7 @@
 import { useState, useEffect } from 'react'
 import { MessageCircle, Moon } from 'lucide-react'
 import { Link } from 'react-router-dom'
-
-const greetings = [
-  'Привет. Как ты сегодня?',
-  'Рада тебя видеть.',
-  'Хорошо, что ты здесь.',
-  'Я рядом, когда будешь готова.',
-]
-
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 6) return 'Не спится? Я рядом.'
-  if (hour < 12) return 'Доброе утро. Как начался твой день?'
-  if (hour < 18) return 'Добрый день. Как ты?'
-  return 'Добрый вечер. Как прошёл день?'
-}
+import { getTimeBasedGreeting } from '../lib/utils'
 
 export function Home() {
   const [greeting, setGreeting] = useState('')
@@ -23,7 +9,7 @@ export function Home() {
   useEffect(() => {
     // Мягкий fade-in для приветствия
     const timer = setTimeout(() => {
-      setGreeting(getGreeting())
+      setGreeting(getTimeBasedGreeting())
     }, 300)
     return () => clearTimeout(timer)
   }, [])

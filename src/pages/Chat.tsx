@@ -1,19 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { ArrowLeft, Send } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { getChatGreeting } from '../lib/utils'
 
 interface Message {
   id: string
   role: 'user' | 'eva'
   content: string
-}
-
-function getTimeBasedGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 6) return 'Не спится? Я рядом. Что у тебя на душе?'
-  if (hour < 12) return 'Доброе утро. Как ты сегодня?'
-  if (hour < 18) return 'Привет. Как проходит твой день?'
-  return 'Добрый вечер. Как ты?'
 }
 
 export function Chat() {
@@ -29,7 +22,7 @@ export function Chat() {
       {
         id: '1',
         role: 'eva',
-        content: getTimeBasedGreeting(),
+        content: getChatGreeting(),
       },
     ])
   }, [])
@@ -58,7 +51,8 @@ export function Chat() {
       // Отправляем только последние 10 сообщений для контекста
       const contextMessages = updatedMessages.slice(-10)
 
-      const response = await fetch('http://localhost:3001/api/chat', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
