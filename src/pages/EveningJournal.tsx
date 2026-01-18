@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Moon, ChevronRight, Check, Sparkles, Loader2 } from 'lucide-react'
 import { supabase, type JournalEntry as JournalEntryType } from '../lib/supabase'
@@ -51,8 +51,43 @@ export function EveningJournal() {
   })
   const [isComplete, setIsComplete] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const currentQuestion = questions[currentStep]
+
+  // Загрузка существующей записи при открытии
+  useEffect(() => {
+    loadExistingEntry()
+  }, [])
+
+  const loadExistingEntry = async () => {
+    setLoading(true)
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('date', today)
+        .single()
+
+      if (data && !error) {
+        setEntries({
+          question1: data.question1 || '',
+          question2: data.question2 || '',
+          question3: data.question3 || '',
+          question4: data.question4 || '',
+        })
+        // Если все поля заполнены, показать завершённый экран
+        if (data.question1 && data.question2 && data.question3 && data.question4) {
+          setIsComplete(true)
+        }
+      }
+    } catch (err) {
+      console.error('Error loading journal:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const saveToSupabase = async () => {
     setSaving(true)
@@ -119,6 +154,16 @@ export function EveningJournal() {
 
   const currentValue = entries[currentQuestion.id as keyof JournalEntry]
 
+  // Показываем loading пока данные грузятся
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-lavender/30 to-cream flex flex-col items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-lavender" />
+        <p className="text-caption mt-4">Загружаю...</p>
+      </div>
+    )
+  }
+
   if (isComplete) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-lavender/30 to-cream flex flex-col">
@@ -157,6 +202,15 @@ export function EveningJournal() {
             >
               Расслабляющая практика перед сном
             </Link>
+            <button
+              onClick={() => {
+                setIsComplete(false)
+                setCurrentStep(0)
+              }}
+              className="w-full py-4 text-caption text-sm hover:text-text transition-colors"
+            >
+              Изменить ответы
+            </button>
           </div>
         </div>
       </div>

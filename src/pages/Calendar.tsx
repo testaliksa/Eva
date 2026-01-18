@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Sun, Moon, Check, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sun, Moon, Check, Loader2, AlertCircle } from 'lucide-react'
 import { supabase, type MoodEntry } from '../lib/supabase'
 
 const moods = [
@@ -34,8 +34,11 @@ export function Calendar() {
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   const today = new Date()
+  const isToday = selectedDate.toDateString() === today.toDateString()
   const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
   const monthNames = [
     'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -66,20 +69,21 @@ export function Calendar() {
   // Загрузка существующей записи при открытии
   useEffect(() => {
     loadExistingEntry()
-  }, [timeOfDay])
+  }, [timeOfDay, selectedDate])
 
   const loadExistingEntry = async () => {
     setLoadingData(true)
+    setError(null)
     try {
-      const todayStr = today.toISOString().split('T')[0]
-      const { data, error } = await supabase
+      const dateStr = selectedDate.toISOString().split('T')[0]
+      const { data, error: fetchError } = await supabase
         .from('mood_entries')
         .select('*')
-        .eq('date', todayStr)
+        .eq('date', dateStr)
         .eq('time_of_day', timeOfDay)
         .single()
 
-      if (data && !error) {
+      if (data && !fetchError) {
         setSelectedMood(data.mood)
         setEnergy(data.energy)
         setAnxiety(data.anxiety)
@@ -95,8 +99,25 @@ export function Calendar() {
       }
     } catch (err) {
       console.error('Error loading entry:', err)
+      setError('Не удалось загрузить данные. Проверь интернет.')
     } finally {
       setLoadingData(false)
+    }
+  }
+
+  // Навигация по датам
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate)
+    newDate.setDate(newDate.getDate() - 1)
+    setSelectedDate(newDate)
+  }
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate)
+    newDate.setDate(newDate.getDate() + 1)
+    // Не позволяем выбрать будущую дату
+    if (newDate <= today) {
+      setSelectedDate(newDate)
     }
   }
 
@@ -104,19 +125,20 @@ export function Calendar() {
     if (!selectedMood) return
 
     setLoading(true)
+    setError(null)
     try {
-      const todayStr = today.toISOString().split('T')[0]
+      const dateStr = selectedDate.toISOString().split('T')[0]
 
-      // Проверяем, есть ли уже запись на сегодня
+      // Проверяем, есть ли уже запись на эту дату
       const { data: existing } = await supabase
         .from('mood_entries')
         .select('id')
-        .eq('date', todayStr)
+        .eq('date', dateStr)
         .eq('time_of_day', timeOfDay)
         .single()
 
       const entry: MoodEntry = {
-        date: todayStr,
+        date: dateStr,
         time_of_day: timeOfDay,
         mood: selectedMood,
         energy,
@@ -162,6 +184,22 @@ export function Calendar() {
     )
   }
 
+  // Показываем ошибку если не удалось загрузить
+  if (error && !selectedMood) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 px-4">
+        <AlertCircle size={32} className="text-sos" />
+        <p className="text-text text-center">{error}</p>
+        <button
+          onClick={loadExistingEntry}
+          className="px-6 py-3 bg-lavender text-text rounded-full font-medium"
+        >
+          Попробовать снова
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <header>
@@ -197,16 +235,29 @@ export function Calendar() {
 
       {/* Текущая дата */}
       <div className="flex items-center justify-between bg-white rounded-2xl p-4">
-        <button className="p-2 text-caption hover:text-text transition-colors">
+        <button
+          onClick={goToPreviousDay}
+          className="p-2 text-caption hover:text-text transition-colors"
+        >
           <ChevronLeft size={20} />
         </button>
         <div className="text-center">
           <p className="font-heading text-lg text-text">
-            {today.getDate()} {monthNames[today.getMonth()]}
+            {selectedDate.getDate()} {monthNames[selectedDate.getMonth()]}
           </p>
-          <p className="text-sm text-caption">{dayNames[today.getDay()]}</p>
+          <p className="text-sm text-caption">
+            {isToday ? 'Сегодня' : dayNames[selectedDate.getDay()]}
+          </p>
         </div>
-        <button className="p-2 text-caption hover:text-text transition-colors">
+        <button
+          onClick={goToNextDay}
+          disabled={isToday}
+          className={`p-2 transition-colors ${
+            isToday
+              ? 'text-gray-200 cursor-not-allowed'
+              : 'text-caption hover:text-text'
+          }`}
+        >
           <ChevronRight size={20} />
         </button>
       </div>

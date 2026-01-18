@@ -126,8 +126,12 @@ export const getPracticeById = (id: string): Practice | undefined => {
 }
 
 // Получить практики по категории
+// 'quick' показывает все практики, остальные категории фильтруют по type
 export const getPracticesByCategory = (category: string): Practice[] => {
-  return practices.filter(p => p.category === category)
+  if (category === 'quick') {
+    return practices // Все практики — быстрые
+  }
+  return practices.filter(p => p.type === category)
 }
 
 // Категории для фильтрации
