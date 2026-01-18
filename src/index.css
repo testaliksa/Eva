@@ -1,0 +1,96 @@
+/* Google Fonts - должен быть первым */
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Nunito:wght@400;600;700&display=swap');
+
+@import "tailwindcss";
+
+/* Цвета из дизайн-гайда Евы */
+@theme {
+  --color-peach: #FCD9D0;
+  --color-lavender: #D6D1F5;
+  --color-mint: #CFF2E9;
+  --color-cream: #F9F6F2;
+  --color-sos: #D72638;
+  --color-text: #3C3C3C;
+  --color-caption: #7A6F6F;
+
+  /* Шрифты */
+  --font-heading: 'Nunito', system-ui, sans-serif;
+  --font-body: 'Lato', system-ui, sans-serif;
+}
+
+/* Base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background-color: var(--color-cream);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+/* Дыхательная анимация для SOS */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+.animate-breathe {
+  animation: breathe 6s ease-in-out infinite;
+}
+
+/* Плавный fade-in для приветствий */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Мягкий spring для карточек */
+@keyframes springIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  70% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-spring-in {
+  animation: springIn 0.4s ease-out forwards;
+}
